@@ -1,0 +1,156 @@
+@page
+@model ProxmoxDashboard.Pages.IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Proxmox Dashboard</h1>
+    <a class="btn btn-outline-warning" asp-page="/Servers">Manage Servers</a>
+</div>
+
+@if (!Model.Datacenters.Any())
+{
+    <div class="alert alert-secondary">
+        No Proxmox servers configured.
+        <a asp-page="/Servers">Add a server</a>
+    </div>
+}
+else
+{
+    <div class="accordion" id="dcAccordion">
+        @for (int dcIdx = 0; dcIdx < Model.Datacenters.Count; dcIdx++)
+        {
+            var dc = Model.Datacenters[dcIdx];
+            var dcCollapseId = $"dc-collapse-{dc.ServerId}";
+            var dcHeadingId = $"dc-heading-{dc.ServerId}";
+            var totalVMs = dc.Nodes.Sum(n => n.VMs.Count);
+
+            <div class="accordion-item" style="background-color: #2a2c2e; border-color: #444;">
+                <h2 class="accordion-header" id="@dcHeadingId">
+                    <button class="accordion-button @(dcIdx > 0 ? "collapsed" : "")"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#@dcCollapseId"
+                            aria-expanded="@(dcIdx == 0 ? "true" : "false")"
+                            aria-controls="@dcCollapseId"
+                            style="background-color: #2a2c2e; color: #e2b714;">
+                        <span class="fw-bold me-2">@dc.DatacenterName</span>
+                        <span class="badge bg-secondary me-2">@totalVMs VMs</span>
+                        <span class="badge bg-secondary me-2">@dc.Nodes.Count node(s)</span>
+
+                        @if (dc.IsStale)
+                        {
+                            <span class="badge bg-warning text-dark me-2"
+                                  title="Data from cache - server unreachable">
+                                STALE
+                            </span>
+                            @if (dc.LastSuccessfulFetch.HasValue)
+                            {
+                                <small class="text-muted ms-2">
+                                    Last fetched: @dc.LastSuccessfulFetch.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                                </small>
+                            }
+                            else
+                            {
+                                <small class="text-muted ms-2">Never fetched</small>
+                            }
+                        }
+                        else
+                        {
+                            <span class="badge bg-success me-2">LIVE</span>
+                        }
+                    </button>
+                </h2>
+                <div id="@dcCollapseId"
+                     class="accordion-collapse collapse @(dcIdx == 0 ? "show" : "")"
+                     aria-labelledby="@dcHeadingId">
+                    <div class="accordion-body" style="background-color: #323437; padding: 0.75rem;">
+                        @if (!dc.Nodes.Any())
+                        {
+                            <p class="text-muted mb-0">No VMs found for this datacenter.</p>
+                        }
+                        else
+                        {
+                            <div class="accordion" id="nodeAccordion-@dc.ServerId">
+                                @for (int nodeIdx = 0; nodeIdx < dc.Nodes.Count; nodeIdx++)
+                                {
+                                    var node = dc.Nodes[nodeIdx];
+                                    var nodeCollapseId = $"node-collapse-{dc.ServerId}-{nodeIdx}";
+                                    var nodeHeadingId = $"node-heading-{dc.ServerId}-{nodeIdx}";
+
+                                    <div class="accordion-item" style="background-color: #3a3c3e; border-color: #555;">
+                                        <h2 class="accordion-header" id="@nodeHeadingId">
+                                            <button class="accordion-button collapsed"
+                                                    type="button"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target="#@nodeCollapseId"
+                                                    aria-expanded="false"
+                                                    aria-controls="@nodeCollapseId"
+                                                    style="background-color: #3a3c3e; color: #ccc; font-size: 0.95rem;">
+                                                <span class="fw-bold me-2">Node: @node.NodeName</span>
+                                                <span class="badge bg-secondary">@node.VMs.Count VMs</span>
+                                            </button>
+                                        </h2>
+                                        <div id="@nodeCollapseId"
+                                             class="accordion-collapse collapse"
+                                             aria-labelledby="@nodeHeadingId">
+                                            <div class="accordion-body p-0">
+                                                <table class="table table-sm table-hover mb-0"
+                                                       style="color: #d1d0c5;">
+                                                    <colgroup>
+                                                        <col style="width: 12%;" />
+                                                        <col style="width: 8%;" />
+                                                        <col style="width: 25%;" />
+                                                        <col style="width: 20%;" />
+                                                        <col style="width: 12%;" />
+                                                        <col style="width: 13%;" />
+                                                        <col style="width: 10%;" />
+                                                    </colgroup>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Status</th>
+                                                            <th>VMID</th>
+                                                            <th>Name</th>
+                                                            <th>IP</th>
+                                                            <th>RAM (GB)</th>
+                                                            <th>CPU</th>
+                                                            <th>Cores</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var vm in node.VMs)
+                                                        {
+                                                            <tr>
+                                                                <td>
+                                                                    @if (vm.Status == "running")
+                                                                    {
+                                                                        <span class="text-success">&#x25CF; running</span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="text-danger">&#x25CF; stopped</span>
+                                                                    }
+                                                                </td>
+                                                                <td>@vm.VMID</td>
+                                                                <td>@vm.Name</td>
+                                                                <td>@(string.IsNullOrEmpty(vm.Ip) ? "-" : vm.Ip)</td>
+                                                                <td>@vm.RAM</td>
+                                                                <td>@vm.CPU</td>
+                                                                <td>@vm.Cores</td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

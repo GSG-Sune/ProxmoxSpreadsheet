@@ -1,0 +1,107 @@
+@page
+@model ProxmoxDashboard.Pages.ServersModel
+@{
+    ViewData["Title"] = "Manage Servers";
+}
+
+<h1>Proxmox Servers</h1>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <p>@error.ErrorMessage</p>
+        }
+    </div>
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Base URL</th>
+            <th>API Token</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var server in Model.Servers)
+        {
+            <tr>
+                <td>@server.Name</td>
+                <td>@server.BaseURL</td>
+                <td><code>******</code></td>
+                <td>
+                    <button class="btn btn-sm btn-primary" type="button"
+                            data-bs-toggle="modal" data-bs-target="#editModal-@server.Id">
+                        Edit
+                    </button>
+                    <form method="post" asp-page-handler="Delete" style="display:inline;">
+                        <input type="hidden" name="id" value="@server.Id" />
+                        <button type="submit" class="btn btn-sm btn-danger"
+                                onclick="return confirm('Delete server @server.Name?');">
+                            Delete
+                        </button>
+                    </form>
+                </td>
+            </tr>
+
+            <!-- Edit Modal -->
+            <div class="modal fade" id="editModal-@server.Id" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="post" asp-page-handler="Edit">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Edit Server</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" name="EditServer.Id" value="@server.Id" />
+                                <div class="mb-3">
+                                    <label class="form-label">Name</label>
+                                    <input type="text" class="form-control" name="EditServer.Name" value="@server.Name" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Base URL</label>
+                                    <input type="text" class="form-control" name="EditServer.BaseURL" value="@server.BaseURL" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">API Token</label>
+                                    <input type="text" class="form-control" name="EditServer.ApiToken" value="@server.ApiToken" required />
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Save</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </tbody>
+</table>
+
+<hr />
+
+<h3>Add Server</h3>
+<form method="post" asp-page-handler="Add">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">Name</label>
+            <input type="text" class="form-control" name="NewServer.Name" placeholder="DC1" required />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Base URL</label>
+            <input type="text" class="form-control" name="NewServer.BaseURL" placeholder="https://your-server:8006/api2/json/" required />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">API Token</label>
+            <input type="text" class="form-control" name="NewServer.ApiToken" placeholder="apiuser@pve!mytoken=..." required />
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-success">Add</button>
+        </div>
+    </div>
+</form>

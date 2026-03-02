@@ -1,0 +1,31 @@
+## .NET
+bin/
+obj/
+
+## SQLite database
+*.db
+*.db-shm
+*.db-wal
+
+## Publish output
+publish/
+publish_v*/
+
+## User-specific files
+*.user
+*.suo
+*.userprefs
+
+## IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+
+## Claude Code
+.claude/
+
+## OS
+Thumbs.db
+Desktop.ini
+.DS_Store
