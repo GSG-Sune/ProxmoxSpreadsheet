@@ -206,6 +206,7 @@ public class IndexModel : PageModel
                 try
                 {
                     var agentResponse = await client.GetAsync($"nodes/{node}/qemu/{vmid}/agent/network-get-interfaces");
+                    _logger.LogInformation("Guest agent response for VMID {vmid}: {statusCode}", vmid, agentResponse.StatusCode);
                     if (agentResponse.IsSuccessStatusCode)
                     {
                         var agentJson = await agentResponse.Content.ReadAsStringAsync();
@@ -231,9 +232,9 @@ public class IndexModel : PageModel
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    _logger.LogWarning("QEMU Guest Agent not responding for VMID: {vmid}", vmid);
+                    _logger.LogWarning(ex, "Failed to get IP from QEMU Guest Agent for VMID: {vmid} on node {node}", vmid, node);
                 }
 
                 vmList.Add(new VM
